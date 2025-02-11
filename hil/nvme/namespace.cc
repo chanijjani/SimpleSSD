@@ -106,9 +106,12 @@ void Namespace::submitCommand(SQEntryWrapper &req, RequestFunction &func) {
 }
 
 void Namespace::setData(uint32_t id, Information *data) {
+  SimpleSSD::info("[Namespace::setData] ENTER");
+
   nsid = id;
   memcpy(&info, data, sizeof(Information));
 
+  SimpleSSD::info("Enable a Disk Image = %d", conf.readBoolean(CONFIG_NVME, NVME_ENABLE_DISK_IMAGE));
   if (conf.readBoolean(CONFIG_NVME, NVME_ENABLE_DISK_IMAGE)) {
     uint64_t diskSize;
 
@@ -116,18 +119,24 @@ void Namespace::setData(uint32_t id, Information *data) {
         conf.readString(CONFIG_NVME, NVME_DISK_IMAGE_PATH + nsid);
 
     if (filename.length() == 0) {
+      SimpleSSD::info("[Namespace::setData] 'MEMDISK' is created.");
       pDisk = new MemDisk();
     }
     else if (conf.readBoolean(CONFIG_NVME, NVME_USE_COW_DISK)) {
+      SimpleSSD::info("[Namespace::setData] 'CoWDisk' is created.");
       pDisk = new CoWDisk();
     }
     else {
+      SimpleSSD::info("[Namespace::setData] 'Disk' is created.");
       pDisk = new Disk();
     }
 
     diskSize = pDisk->open(filename, info.size * info.lbaSize, info.lbaSize);
+    SimpleSSD::info("Disk size = %ld, info.size(%ld) * info.lbaSize(%ld) = %ld",
+        diskSize, info.size, info.lbaSize, info.size * info.lbaSize);
 
     if (diskSize == 0) {
+      warn("Disk size is zero!!!");
       panic("Failed to open disk image");
     }
     else if (diskSize != info.size * info.lbaSize) {
@@ -137,8 +146,8 @@ void Namespace::setData(uint32_t id, Information *data) {
     }
 
     if (filename.length() > 0) {
-      SimpleSSD::info("Using disk image at %s for NSID %u", filename.c_str(),
-                      nsid);
+      SimpleSSD::info("Using disk image at %s for NSID %u, disk size = %ld", filename.c_str(),
+                      nsid, diskSize);
     }
   }
 

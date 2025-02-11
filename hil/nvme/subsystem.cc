@@ -60,6 +60,8 @@ Subsystem::~Subsystem() {
 }
 
 void Subsystem::init() {
+  info("[Subsystem::init()] ENTER");
+
   pHIL = new HIL(conf);
   uint16_t nNamespaces =
       (uint16_t)conf.readUint(CONFIG_NVME, NVME_ENABLE_DEFAULT_NAMESPACE);
@@ -217,6 +219,9 @@ bool Subsystem::createNamespace(uint32_t nsid, Namespace::Information *info) {
   // Fill Information
   info->sizeInByteL = requestedLogicalPages * logicalPageSize;
   info->sizeInByteH = 0;
+  debugprint(LOG_HIL_NVME,
+             "sizeInByteL %ld, requestedLogicalPages %ld, logicalPageSize = %ld",
+              info->sizeInByteL, requestedLogicalPages, logicalPageSize);
 
   // Create namespace
   Namespace *pNS = new Namespace(this, cfgdata);

@@ -18,6 +18,7 @@
  */
 
 #include "util/disk.hh"
+#include "util/simplessd.hh"
 
 #include <cstring>
 
@@ -39,6 +40,8 @@ Disk::~Disk() {
 uint64_t Disk::open(std::string path, uint64_t desiredSize, uint32_t lbaSize) {
   filename = path;
   sectorSize = lbaSize;
+
+  info("[Disk::open] ENTER");
 
   // Validate size
 #ifdef _MSC_VER
@@ -76,12 +79,16 @@ uint64_t Disk::open(std::string path, uint64_t desiredSize, uint32_t lbaSize) {
 
   if (stat(filename.c_str(), &s) == 0) {
     // File exists
+    info("s.st_mode = %d, S_ISREG(s.st_mode) = %ld", s.st_mode, S_ISREG(s.st_mode));
     if (S_ISREG(s.st_mode)) {
+      info("s.st_size = %ld", s.st_size);
       diskSize = s.st_size;
     }
     else {
       // panic("nvme_disk: Specified file %s is not regular file.\n",
       //       filename.c_str());
+      warn("nvme_disk: Specified file %s is not regular file.\n",
+            filename.c_str());
     }
   }
   else {
@@ -94,6 +101,7 @@ uint64_t Disk::open(std::string path, uint64_t desiredSize, uint32_t lbaSize) {
       diskSize = desiredSize;
     }
     else {
+      warn("Fail to set a disk size");
       // panic("nvme_disk: Failed to set disk size %" PRIu64 " errno=%d\n",
       //       diskSize, errno);
     }
@@ -104,9 +112,10 @@ uint64_t Disk::open(std::string path, uint64_t desiredSize, uint32_t lbaSize) {
   disk.open(filename, std::ios::in | std::ios::out | std::ios::binary);
 
   if (!disk.is_open()) {
-    // panic("failed to open file");
+    warn("failed to open file");
   }
 
+  info("Disk is opened!!!(Size: %ld)", diskSize);
   return diskSize;
 }
 
@@ -145,8 +154,8 @@ uint16_t Disk::read(uint64_t slba, uint16_t nlblk, uint8_t *buffer) {
 
     memset(buffer + avail, 0, nlblk * sectorSize - avail);
 
-    // DPRINTF(NVMeDisk, "DISK    | READ  | BYTE %016" PRIX64 " + %X\n",
-    //         slba, nlblk * sectorSize);
+    debugprint(LOG_COMMON, "DISK    | READ  | BYTE %016" PRIX64 " + %X\n",
+            slba, nlblk * sectorSize);
 
     ret = nlblk;
   }
@@ -162,15 +171,15 @@ uint16_t Disk::write(uint64_t slba, uint16_t nlblk, uint8_t *buffer) {
 
     disk.seekp(slba, std::ios::beg);
     if (!disk.good()) {
-      // panic("nvme_disk: Fail to seek to %" PRIu64 "\n", slba);
+      panic("nvme_disk: Fail to seek to %" PRIu64 "\n", slba);
     }
 
     uint64_t offset = disk.tellp();
     disk.write((char *)buffer, sectorSize * nlblk);
     offset = (uint64_t)disk.tellp() - offset;
 
-    // DPRINTF(NVMeDisk, "DISK    | WRITE | BYTE %016" PRIX64 " + %X\n", slba,
-    //         offset);
+    debugprint(LOG_COMMON, "DISK    | WRITE | BYTE %016" PRIX64 " + %X\n", slba,
+            offset);
 
     ret = offset / sectorSize;
   }
@@ -239,6 +248,8 @@ uint16_t CoWDisk::write(uint64_t slba, uint16_t nlblk, uint8_t *buffer) {
 uint64_t MemDisk::open(std::string, uint64_t size, uint32_t lbaSize) {
   diskSize = size;
   sectorSize = lbaSize;
+
+  info("[MemDisk::open] ENTER, Disk Size = %ld, Sector Size = %ld", size, lbaSize);
 
   return size;
 }
