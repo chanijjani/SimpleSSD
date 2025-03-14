@@ -53,6 +53,8 @@ Controller::Controller(Interface *intrface, ConfigReader &c)
   ARM::AXI::BUS_WIDTH axiWidth;
   uint64_t axiClock;
 
+  info("[Controller::Controller] ENTER");
+
   // Get AXI setting
   axiWidth = (ARM::AXI::BUS_WIDTH)conf.readInt(CONFIG_NVME, NVME_AXI_BUS_WIDTH);
   axiClock = conf.readUint(CONFIG_NVME, NVME_AXI_CLOCK);
