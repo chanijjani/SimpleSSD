@@ -40,6 +40,8 @@ const char NAME_MAX_IO_SQUEUE[] = "MaxIOSQueue";
 const char NAME_WRR_HIGH[] = "WRRHigh";
 const char NAME_WRR_MEDIUM[] = "WRRMedium";
 const char NAME_ENABLE_DEFAULT_NAMESPACE[] = "DefaultNamespace";
+const char NAME_ENABLE_SECURITY_NAMESPACE[] = "SecurityNamespace";
+const char NAME_SECURITY_METADATA_RATIO[] = "SecurityMetadataRatio";
 const char NAME_LBA_SIZE[] = "LBASize";
 const char NAME_ENABLE_DISK_IMAGE[] = "EnableDiskImage";
 const char NAME_STRICT_DISK_SIZE[] = "StrictSizeCheck";
@@ -60,6 +62,8 @@ Config::Config() {
   wrrMedium = 2;
   lbaSize = 512;
   defaultNamespace = 1;
+  securityNamespace = 1;
+  securityMetadataRatio = 0.2;
   enableDiskImage = false;
   strictDiskSize = false;
   useCopyOnWriteDisk = false;
@@ -138,6 +142,12 @@ bool Config::setConfig(const char *name, const char *value) {
   }
   else if (MATCH_NAME(NAME_ENABLE_DEFAULT_NAMESPACE)) {
     defaultNamespace = (uint16_t)strtoul(value, nullptr, 10);
+  }
+  else if (MATCH_NAME(NAME_ENABLE_SECURITY_NAMESPACE)) {
+    securityNamespace = (uint16_t)strtoul(value, nullptr, 10);
+  }
+  else if (MATCH_NAME(NAME_SECURITY_METADATA_RATIO)) {
+    securityMetadataRatio = strtof(value, nullptr);
   }
   else if (MATCH_NAME(NAME_LBA_SIZE)) {
     lbaSize = strtoul(value, nullptr, 10);
@@ -235,8 +245,23 @@ uint64_t Config::readUint(uint32_t idx) {
     case NVME_ENABLE_DEFAULT_NAMESPACE:
       ret = defaultNamespace;
       break;
+    case NVME_ENABLE_SECURITY_NAMESPACE:
+      ret = securityNamespace;
+      break;
     case NVME_LBA_SIZE:
       ret = lbaSize;
+      break;
+  }
+
+  return ret;
+}
+
+float Config::readFloat(uint32_t idx) {
+  float ret = 0;
+
+  switch (idx) {
+    case NVME_SECURITY_METADATA_RATIO:
+      ret = securityMetadataRatio;
       break;
   }
 
