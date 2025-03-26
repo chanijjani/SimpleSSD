@@ -60,6 +60,8 @@ Subsystem::~Subsystem() {
 }
 
 void Subsystem::init() {
+  info("[Subsystem::init()] ENTER");
+
   pHIL = new HIL(conf);
   uint16_t nNamespaces =
       (uint16_t)conf.readUint(CONFIG_NVME, NVME_ENABLE_DEFAULT_NAMESPACE);
@@ -88,8 +90,27 @@ void Subsystem::init() {
     totalSize = totalLogicalPages * logicalPageSize / lba;
     info.dataProtectionSettings = 0x00;
     info.namespaceSharingCapabilities = 0x00;
+  
+    // Create a namespace for storing security metadata
+    uint16_t securityNamespace =
+      (uint16_t)conf.readUint(CONFIG_NVME, NVME_ENABLE_SECURITY_NAMESPACE);
+    if (securityNamespace > 0) {
+      float securityMetadataRatio =
+        (float)conf.readFloat(CONFIG_NVME, NVME_SECURITY_METADATA_RATIO);
 
-    for (uint16_t i = 0; i < nNamespaces; i++) {
+      info.size = totalSize * securityMetadataRatio;
+      info.capacity = info.size;
+      totalSize -= info.size;
+
+      if (createNamespace(NSID_LOWEST, &info)) {
+        lNamespaces.back()->attach(true);
+      }
+      else {
+        panic("Failed to create a security namespace");
+      }
+    }
+
+    for (uint16_t i = securityNamespace; i < nNamespaces; i++) {
       info.size = totalSize / nNamespaces;
       info.capacity = info.size;
 
@@ -217,6 +238,9 @@ bool Subsystem::createNamespace(uint32_t nsid, Namespace::Information *info) {
   // Fill Information
   info->sizeInByteL = requestedLogicalPages * logicalPageSize;
   info->sizeInByteH = 0;
+  debugprint(LOG_HIL_NVME,
+             "sizeInByteL %ld, requestedLogicalPages %ld, logicalPageSize = %ld",
+              info->sizeInByteL, requestedLogicalPages, logicalPageSize);
 
   // Create namespace
   Namespace *pNS = new Namespace(this, cfgdata);
