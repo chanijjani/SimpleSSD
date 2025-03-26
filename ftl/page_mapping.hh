@@ -33,6 +33,19 @@ namespace SimpleSSD {
 
 namespace FTL {
 
+typedef struct _SecurityMetadata {
+  // TODO: Synchronize with MerkleTree code
+  void *node;
+} SecurityMetadata;
+
+typedef struct _RecoveryEntry {
+  // SSD Info
+  std::vector<Block> garbageBlocks;
+
+  // MerkleTree metadata
+  std::list<SecurityMetadata> innerNodes;
+} RecoveryEntry;
+
 class PageMapping : public AbstractFTL {
  private:
   PAL::PAL *pPAL;
@@ -51,6 +64,8 @@ class PageMapping : public AbstractFTL {
   bool bReclaimMore;
   bool bRandomTweak;
   uint32_t bitsetSize;
+
+  std::vector<RecoveryEntry> recoveryTable;
 
   struct {
     uint64_t gcCount;

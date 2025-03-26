@@ -46,6 +46,8 @@ typedef enum {
   NVME_WRR_HIGH,
   NVME_WRR_MEDIUM,
   NVME_ENABLE_DEFAULT_NAMESPACE,
+  NVME_ENABLE_SECURITY_NAMESPACE,
+  NVME_SECURITY_METADATA_RATIO,
   NVME_LBA_SIZE,
   NVME_ENABLE_DISK_IMAGE,
   NVME_STRICT_DISK_SIZE,
@@ -68,6 +70,8 @@ class Config : public BaseConfig {
   uint16_t wrrMedium;            //!< Default: 2
   uint64_t lbaSize;              //!< Default: 512
   uint16_t defaultNamespace;     //!< Default: 1
+  uint16_t securityNamespace;     //!< Default: 1
+  float securityMetadataRatio;     //!< Default: 0.2
   bool enableDiskImage;          //!< Default: False
   bool strictDiskSize;           //!< Default: False
   bool useCopyOnWriteDisk;       //!< Default: False
@@ -81,6 +85,7 @@ class Config : public BaseConfig {
 
   int64_t readInt(uint32_t) override;
   uint64_t readUint(uint32_t) override;
+  float readFloat(uint32_t) override;
   std::string readString(uint32_t) override;
   bool readBoolean(uint32_t) override;
 };
